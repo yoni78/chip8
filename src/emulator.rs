@@ -1,0 +1,26 @@
+const MEM_SIZE: i32 = 4 * 1024;
+
+struct Emulator {
+    memory: Vec<u8>,
+    stack: Vec<u16>,
+    delay_timer: u8,
+    sound_timer: u8,
+    pc: u16,
+    index: u16,
+    v0: u8,
+    v1: u8,
+    v2: u8,
+    v3: u8,
+    v4: u8,
+    v5: u8,
+    v6: u8,
+    v7: u8,
+    v8: u8,
+    v9: u8,
+    va: u8,
+    vb: u8,
+    vc: u8,
+    vd: u8,
+    ve: u8,
+    vf: u8,
+}

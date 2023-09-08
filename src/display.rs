@@ -4,9 +4,9 @@ use std::sync::mpsc::Receiver;
 use glfw::{Action, Context, Key, Glfw, Window, WindowEvent};
 
 pub trait Display {
-    fn start(self);
-    fn clear(self);
-    fn toggle_pixel(self, x: u8, y: u8);
+    fn start(&mut self);
+    fn clear(&mut self);
+    fn toggle_pixel(&mut self, x: u8, y: u8);
 }
 
 pub struct GLFWDisplay {
@@ -31,7 +31,7 @@ impl GLFWDisplay {
 }
 
 impl Display for GLFWDisplay {
-    fn start(mut self) {
+    fn start(&mut self) {
         self.window.make_current();
         self.window.set_key_polling(true);
     
@@ -52,11 +52,11 @@ impl Display for GLFWDisplay {
         }
     }
 
-    fn clear(self) {
+    fn clear(&mut self) {
         todo!()
     }
 
-    fn toggle_pixel(self, x: u8, y: u8) {
+    fn toggle_pixel(&mut self, x: u8, y: u8) {
         todo!()
     }
 }

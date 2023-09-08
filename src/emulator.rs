@@ -12,22 +12,7 @@ pub struct Emulator {
     sound_timer: u8,
     pc: u16,
     index: u16,
-    v0: u8,
-    v1: u8,
-    v2: u8,
-    v3: u8,
-    v4: u8,
-    v5: u8,
-    v6: u8,
-    v7: u8,
-    v8: u8,
-    v9: u8,
-    va: u8,
-    vb: u8,
-    vc: u8,
-    vd: u8,
-    ve: u8,
-    vf: u8,
+    regs: [u8; 16],
     display: Box<dyn Display>
 }
 
@@ -40,31 +25,20 @@ impl Emulator {
             sound_timer: 0,
             pc: 0,
             index: 0,
-            v0: 0,
-            v1: 0,
-            v2: 0,
-            v3: 0,
-            v4: 0,
-            v5: 0,
-            v6: 0,
-            v7: 0,
-            v8: 0,
-            v9: 0,
-            va: 0,
-            vb: 0,
-            vc: 0,
-            vd: 0,
-            ve: 0,
-            vf: 0,
+            regs: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             display,
         }
     }
 
     pub fn execute_program(&mut self, program_data: &[u8]) {
         self.load_program(program_data);
+        self.pc = PROGRAM_LOC as u16;
+
+        self.display.start();
 
         loop {
             let inst = self.fetch();
+            self.execute(inst);
 
             thread::sleep(Duration::from_secs_f32(1.0 / CLOCK_FREQ));
         }
@@ -92,7 +66,80 @@ impl Emulator {
         return inst;
     }
 
-    fn decode(&mut self, inst: u16) {
+    fn execute(&mut self, inst: u16) {
+        let op = Emulator::get_opcode(inst);
+        
+        match op {
+            0x0 => {
+                match inst {
+                    0x00e0 => self.clear_screen(),
 
+                    _ => {}
+                }
+            }
+
+            0x1 => self.jump(inst),
+            0x6 => self.set(inst),
+            0x7 => self.add(inst),
+            0xa => self.set_index(inst),
+            
+            // TODO: Invalid instruction error
+            _ => {}
+        }
     }
+    
+    fn get_opcode(inst: u16) -> u16 {
+        (inst & 0xf000) >> 12
+    }
+
+    fn get_first_reg(inst: u16) -> u16 {
+        (inst & 0x0f00) >> 8
+    }
+
+    fn get_second_reg(inst: u16) -> u16 {
+        (inst & 0x00f0) >> 4
+    }
+
+    fn get_immediate_number(inst: u16) -> u8 {
+        (inst & 0x000f) as u8
+    }
+
+    fn get_double_immediate_number(inst: u16) -> u8 {
+        (inst & 0x00ff) as u8
+    }
+
+    fn get_immediate_addr(inst: u16) -> u16 {
+        inst & 0x0fff
+    }
+
+    fn clear_screen(&mut self) {
+        self.display.clear();
+    }
+
+    fn jump(&mut self, inst: u16) {
+        self.pc = Emulator::get_immediate_addr(inst);
+    }
+
+    // TODO: Add errors for invalid register
+
+    fn set(&mut self, inst: u16) {
+        let reg = Emulator::get_first_reg(inst);
+        let val = Emulator::get_double_immediate_number(inst);
+
+        self.regs[reg as usize] = val;
+    }
+
+    fn add(&mut self, inst: u16) {
+        let reg = Emulator::get_first_reg(inst);
+        let val = Emulator::get_double_immediate_number(inst);
+
+        self.regs[reg as usize] += val;
+    }
+
+    fn set_index(&mut self, inst: u16) {
+        let val = Emulator::get_immediate_addr(inst);
+
+        self.index = val;
+    }
+ 
 }

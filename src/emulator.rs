@@ -25,7 +25,7 @@ impl Emulator {
             sound_timer: 0,
             pc: 0,
             index: 0,
-            regs: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            regs: [0; 16],
             display,
         }
     }

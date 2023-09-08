@@ -1,8 +1,10 @@
+use crate::display::Display;
+
 const MEM_SIZE: usize = 4 * 1024;
 const CLOCK_FREQ: i32 = 700;
 const PROGRAM_LOC: usize = 0x200;
 
-struct Emulator {
+pub struct Emulator {
     memory: Vec<u8>,
     stack: Vec<u16>,
     delay_timer: u8,
@@ -25,10 +27,11 @@ struct Emulator {
     vd: u8,
     ve: u8,
     vf: u8,
+    display: Box<dyn Display>
 }
 
 impl Emulator {
-    fn new() -> Self {
+    pub fn new(display: Box<dyn Display>) -> Self {
         Self {
             memory: Vec::with_capacity(MEM_SIZE),
             stack: Vec::new(),
@@ -52,10 +55,11 @@ impl Emulator {
             vd: 0,
             ve: 0,
             vf: 0,
+            display,
         }
     }
 
-    fn load_program(mut self, program_data: &[u8]) {
+    pub fn load_program(mut self, program_data: &[u8]) {
         for (i, byte) in program_data.iter().enumerate() {
             self.memory[PROGRAM_LOC + i] = *byte;
         }

@@ -19,7 +19,7 @@ pub struct Emulator {
 impl Emulator {
     pub fn new(display: Box<dyn Display>) -> Self {
         Self {
-            memory: Vec::with_capacity(MEM_SIZE),
+            memory: vec![0; MEM_SIZE],
             stack: Vec::new(),
             delay_timer: 0,
             sound_timer: 0,
@@ -34,6 +34,7 @@ impl Emulator {
         self.load_program(program_data);
         self.pc = PROGRAM_LOC as u16;
 
+        // TODO: Bg thread?
         self.display.start();
 
         loop {

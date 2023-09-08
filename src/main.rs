@@ -2,9 +2,13 @@ mod emulator;
 mod display;
 
 use emulator::Emulator;
-use display::{Display, GLFWDisplay};
+use display::{Display, OpenGLDisplay};
 
 fn main() {
-    let display: Box<dyn Display> = Box::new(GLFWDisplay::new());
-    let emulator = Emulator::new(display);
+    let display: Box<dyn Display> = Box::new(OpenGLDisplay::new());
+    let mut emulator = Emulator::new(display);
+
+    let prog = [0x0];
+
+    emulator.execute_program(&prog);
 }

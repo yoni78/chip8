@@ -9,18 +9,22 @@ pub trait Display {
     fn toggle_pixel(&mut self, x: u8, y: u8);
 }
 
-pub struct GLFWDisplay {
+pub struct OpenGLDisplay {
     glfw: Glfw,
     window: Window,
     events: Receiver<(f64, WindowEvent)>
 }
 
-impl GLFWDisplay {
+impl OpenGLDisplay {
     pub fn new() -> Self {
         let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
 
-        let (window, events) = glfw.create_window(640, 320, "CHIP-8 Emulator", glfw::WindowMode::Windowed)
+        let (mut window, events) = glfw.create_window(640, 320, "CHIP-8 Emulator", glfw::WindowMode::Windowed)
             .expect("Failed to create GLFW window.");
+
+        glfw.window_hint(glfw::WindowHint::ContextVersion(3, 3));
+        glfw.window_hint(glfw::WindowHint::OpenGlProfile(glfw::OpenGlProfileHint::Core));
+        gl::load_with(|s| window.get_proc_address(s) as *const std::os::raw::c_void);
 
         Self {
             glfw,
@@ -30,12 +34,21 @@ impl GLFWDisplay {
     }
 }
 
-impl Display for GLFWDisplay {
+impl Display for OpenGLDisplay {
     fn start(&mut self) {
         self.window.make_current();
         self.window.set_key_polling(true);
+
+        unsafe {
+            gl::ClearColor(0.0, 0.0, 0.5, 1.0);
+        }
     
         while !self.window.should_close() {
+            
+            unsafe {
+                gl::Clear(gl::COLOR_BUFFER_BIT);    
+            }
+
             self.window.swap_buffers();
     
             self.glfw.poll_events();

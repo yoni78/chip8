@@ -1,7 +1,8 @@
 use crate::display::Display;
+use std::{thread, time::Duration};
 
 const MEM_SIZE: usize = 4 * 1024;
-const CLOCK_FREQ: i32 = 700;
+const CLOCK_FREQ: f32 = 700.0;
 const PROGRAM_LOC: usize = 0x200;
 
 pub struct Emulator {
@@ -59,9 +60,39 @@ impl Emulator {
         }
     }
 
-    pub fn load_program(mut self, program_data: &[u8]) {
+    pub fn execute_program(&mut self, program_data: &[u8]) {
+        self.load_program(program_data);
+
+        loop {
+            let inst = self.fetch();
+
+            thread::sleep(Duration::from_secs_f32(1.0 / CLOCK_FREQ));
+        }
+    }
+
+    fn load_program(&mut self, program_data: &[u8]) {
         for (i, byte) in program_data.iter().enumerate() {
             self.memory[PROGRAM_LOC + i] = *byte;
         }
+    }
+
+    fn fetch(&mut self) -> u16 {
+        // TODO: Little or big endian
+        let msb = self.memory[self.pc as usize];
+        let lsb = self.memory[(self.pc + 1) as usize];
+
+        self.pc += 2;
+
+        let mut inst: u16 = 0;
+
+        inst += msb as u16;
+        inst <<= 8;
+        inst += lsb as u16;
+
+        return inst;
+    }
+
+    fn decode(&mut self, inst: u16) {
+
     }
 }

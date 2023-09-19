@@ -1,5 +1,5 @@
-use crate::display::Display;
 use std::{thread, time::Duration};
+use piston_window::*;
 
 const MEM_SIZE: usize = 4 * 1024;
 const CLOCK_FREQ: f32 = 700.0;
@@ -13,11 +13,11 @@ pub struct Emulator {
     pc: u16,
     index: u16,
     regs: [u8; 16],
-    display: Box<dyn Display>
+    display_commands: Vec<DisplayCommand>
 }
 
 impl Emulator {
-    pub fn new(display: Box<dyn Display>) -> Self {
+    pub fn new() -> Self {
         Self {
             memory: vec![0; MEM_SIZE],
             stack: Vec::new(),
@@ -26,7 +26,7 @@ impl Emulator {
             pc: 0,
             index: 0,
             regs: [0; 16],
-            display,
+            display_commands: Vec::new(),
         }
     }
 
@@ -34,13 +34,31 @@ impl Emulator {
         self.load_program(program_data);
         self.pc = PROGRAM_LOC as u16;
 
-        // TODO: Bg thread?
-        self.display.start();
+        let mut window: PistonWindow = 
+            WindowSettings::new("CHIP-8", [640, 320])
+            .exit_on_esc(true).build().unwrap();
 
-        loop {
+        while let Some(e) = window.next() {
             let inst = self.fetch();
             self.execute(inst);
 
+            let cmd_opt = self.display_commands.pop();
+            
+            match cmd_opt {
+                Some(cmd) => {
+                    window.draw_2d(&e, |c, g, _device| {
+                        match cmd {
+                            DisplayCommand::ClearScreen => clear([0.0; 4], g),
+                        }
+                        
+
+                        rectangle([1.0, 0.0, 0.0, 1.0], // red
+                                [0.0, 0.0, 100.0, 100.0],
+                                c.transform, g);
+                    });
+                }
+                None => {}
+            }
             thread::sleep(Duration::from_secs_f32(1.0 / CLOCK_FREQ));
         }
     }
@@ -114,7 +132,7 @@ impl Emulator {
     }
 
     fn clear_screen(&mut self) {
-        self.display.clear();
+        self.display_commands.push(DisplayCommand::ClearScreen);
     }
 
     fn jump(&mut self, inst: u16) {
@@ -143,4 +161,8 @@ impl Emulator {
         self.index = val;
     }
  
+}
+
+enum DisplayCommand {
+    ClearScreen,
 }

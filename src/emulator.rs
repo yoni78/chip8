@@ -4,6 +4,11 @@ use piston_window::*;
 const MEM_SIZE: usize = 4 * 1024;
 const CLOCK_FREQ: f32 = 700.0;
 const PROGRAM_LOC: usize = 0x200;
+const PIXEL_HEIGHT: usize = 10;
+const PIXEL_WIDTH: usize = 10;
+const DISPLAY_WIDTH: usize = 64;
+const DISPLAY_HEIGHT: usize = 32;
+const REGS_COUNT: usize = 16;
 
 pub struct Emulator {
     memory: Vec<u8>,
@@ -12,8 +17,8 @@ pub struct Emulator {
     sound_timer: u8,
     pc: u16,
     index: u16,
-    regs: [u8; 16],
-    display_commands: Vec<DisplayCommand>
+    regs: [u8; REGS_COUNT],
+    display: [[u8; DISPLAY_WIDTH]; DISPLAY_HEIGHT],
 }
 
 impl Emulator {
@@ -25,8 +30,8 @@ impl Emulator {
             sound_timer: 0,
             pc: 0,
             index: 0,
-            regs: [0; 16],
-            display_commands: Vec::new(),
+            regs: [0; REGS_COUNT],
+            display: [[0; DISPLAY_WIDTH]; DISPLAY_HEIGHT],
         }
     }
 
@@ -41,24 +46,22 @@ impl Emulator {
         while let Some(e) = window.next() {
             let inst = self.fetch();
             self.execute(inst);
-
-            let cmd_opt = self.display_commands.pop();
             
-            match cmd_opt {
-                Some(cmd) => {
-                    window.draw_2d(&e, |c, g, _device| {
-                        match cmd {
-                            DisplayCommand::ClearScreen => clear([0.0; 4], g),
-                        }
-                        
-
-                        rectangle([1.0, 0.0, 0.0, 1.0], // red
-                                [0.0, 0.0, 100.0, 100.0],
+            window.draw_2d(&e, |c, g, _device| {
+                clear([0.0; 4], g);
+                
+                for i in 0..DISPLAY_HEIGHT {
+                    for j in 0..DISPLAY_WIDTH {
+                        if self.display[i][j] == 1 {
+                            rectangle([1.0, 1.0, 1.0, 1.0],
+                                [(j * PIXEL_WIDTH) as f64, (i * PIXEL_HEIGHT) as f64, PIXEL_WIDTH as f64, PIXEL_HEIGHT as f64],
                                 c.transform, g);
-                    });
+                        }
+                    }
                 }
-                None => {}
-            }
+                
+            });
+
             thread::sleep(Duration::from_secs_f32(1.0 / CLOCK_FREQ));
         }
     }
@@ -101,6 +104,7 @@ impl Emulator {
             0x6 => self.set(inst),
             0x7 => self.add(inst),
             0xa => self.set_index(inst),
+            0xd => self.display(inst),
             
             // TODO: Invalid instruction error
             _ => {}
@@ -132,7 +136,11 @@ impl Emulator {
     }
 
     fn clear_screen(&mut self) {
-        self.display_commands.push(DisplayCommand::ClearScreen);
+        for i in 0..DISPLAY_HEIGHT {
+            for j in 0..DISPLAY_WIDTH {
+                self.display[i][j] = 0;
+            }
+        }
     }
 
     fn jump(&mut self, inst: u16) {
@@ -160,9 +168,9 @@ impl Emulator {
 
         self.index = val;
     }
- 
-}
 
-enum DisplayCommand {
-    ClearScreen,
+    fn display(&mut self, inst: u16) {
+        self.display[15][32] = 1;
+    }
+ 
 }

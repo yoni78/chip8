@@ -74,6 +74,7 @@ impl Emulator {
 
             0x1 => self.jump(inst),
             0x2 => self.subroutine_call(inst),
+            0x3 | 0x4 | 0x5 | 0x9 => self.skip(inst),
             0x6 => self.set(inst),
             0x7 => self.add(inst),
             0xa => self.set_index(inst),
@@ -187,5 +188,39 @@ impl Emulator {
         if let Some(addr) = self.stack.pop() {
             self.pc = addr;
         }
+    }
+
+    fn skip(&mut self, inst: u16) {
+        let op = Emulator::get_opcode(inst);
+        let vx = self.regs[Emulator::get_first_reg(inst) as usize];
+        let vy = self.regs[Emulator::get_second_reg(inst) as usize];
+        let imm = Emulator::get_double_immediate_number(inst);
+
+        match op {
+            0x3 => {
+                if vx == imm {
+                    self.pc += 2;
+                }
+            }
+
+            0x4 => {
+                if vx != imm {
+                    self.pc += 2;
+                }
+            }
+
+            0x5 => {
+                if vx == vy {
+                    self.pc += 2;
+                }
+            }
+
+            0x9 => {
+                if vx != vy {
+                    self.pc += 2;
+                }
+            }
+            _ => {}
+        };
     }
 }

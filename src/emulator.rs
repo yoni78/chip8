@@ -85,12 +85,12 @@ impl Emulator {
         (inst & 0xf000) >> 12
     }
 
-    fn get_first_reg(inst: u16) -> u16 {
-        (inst & 0x0f00) >> 8
+    fn get_first_reg(inst: u16) -> u8 {
+        ((inst & 0x0f00) >> 8) as u8
     }
 
-    fn get_second_reg(inst: u16) -> u16 {
-        (inst & 0x00f0) >> 4
+    fn get_second_reg(inst: u16) -> u8 {
+        ((inst & 0x00f0) >> 4) as u8
     }
 
     fn get_immediate_number(inst: u16) -> u8 {
@@ -140,6 +140,37 @@ impl Emulator {
     }
 
     fn display(&mut self, inst: u16) {
-        self.display[15][32] = 1;
+        // TODO: Validate instruction
+        let mut x = (self.regs[Emulator::get_first_reg(inst) as usize] % 64) as usize;
+        let mut y = (self.regs[Emulator::get_second_reg(inst) as usize] % 32) as usize;
+        let n = Emulator::get_immediate_number(inst);
+
+        self.regs[0xf] = 0;
+
+        for row in 0..n {
+            if y >= DISPLAY_HEIGHT {
+                break;
+            }
+
+            let sprite_byte = self.memory[(self.index + row as u16) as usize];
+
+            for i in 0..8 {
+                if x >= DISPLAY_WIDTH {
+                    break;
+                }
+
+                let bit = (sprite_byte >> (7 - i)) & 1;
+
+                if bit == 1 && self.display[y][x] == 1 {
+                    self.regs[0xf] = 1;
+                }
+
+                self.display[y][x] ^= bit;
+
+                x += 1;
+            }
+
+            y += 1;
+        }
     }
 }

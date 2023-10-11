@@ -1,11 +1,13 @@
+mod display;
 mod emulator;
 
+use display::{Display, PistonDisplay};
 use emulator::Emulator;
 
 fn main() {
-    let mut emulator = Emulator::new();
+    let mut chip_diplay = PistonDisplay::new(Emulator::new());
 
-    let prog = [0xd1, 0x11];
+    let program = vec![0xd1, 0x11];
 
-    emulator.execute_program(&prog);
+    chip_diplay.start(program);
 }

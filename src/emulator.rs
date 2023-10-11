@@ -1,4 +1,5 @@
 use crate::display::{DISPLAY_HEIGHT, DISPLAY_WIDTH};
+use rand::prelude::*;
 
 const MEM_SIZE: usize = 4 * 1024;
 const PROGRAM_LOC: usize = 0x200;
@@ -80,7 +81,17 @@ impl Emulator {
             0x7 => self.add(inst),
             0x8 => self.logical_arithmetic_op(inst),
             0xa => self.set_index(inst),
+            0xb => self.jump_with_offset(inst),
+            0xc => self.random(inst),
             0xd => self.display(inst),
+            0xf => {
+                let imm = Emulator::get_double_immediate_number(inst);
+
+                match imm {
+                    0x1e => self.add_to_index(inst),
+                    _ => {}
+                }
+            }
 
             // TODO: Invalid instruction error
             _ => {}
@@ -286,5 +297,31 @@ impl Emulator {
 
             _ => {}
         };
+    }
+
+    // TOOD: Add config for alt behavior
+
+    fn jump_with_offset(&mut self, inst: u16) {
+        let addr = Emulator::get_immediate_addr(inst);
+
+        self.pc = addr + self.regs[0] as u16;
+    }
+
+    fn random(&mut self, inst: u16) {
+        let imm = Emulator::get_double_immediate_number(inst);
+        let rand_num: u8 = rand::random();
+        let reg = Emulator::get_first_reg(inst) as usize;
+
+        self.regs[reg] = rand_num & imm;
+    }
+
+    fn add_to_index(&mut self, inst: u16) {
+        let reg = Emulator::get_first_reg(inst) as usize;
+
+        self.index += self.regs[reg] as u16;
+
+        if self.index > 0xfff {
+            self.regs[FLAG_REG] = 1;
+        }
     }
 }

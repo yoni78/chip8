@@ -26,6 +26,7 @@ impl Display for PistonDisplay {
     fn start(&mut self, program: Vec<u8>) {
         let mut window: PistonWindow = WindowSettings::new("CHIP-8", [640, 320])
             .exit_on_esc(true)
+            .resizable(false)
             .build()
             .unwrap();
 

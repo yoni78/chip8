@@ -67,7 +67,7 @@ impl Emulator {
         match op {
             0x0 => match inst {
                 0x00e0 => self.clear_screen(),
-                0x00ee => self.subroutine_pop(),
+                0x00ee => self.subroutine_ret(),
 
                 _ => {}
             },
@@ -183,7 +183,7 @@ impl Emulator {
         self.jump(inst);
     }
 
-    fn subroutine_pop(&mut self) {
+    fn subroutine_ret(&mut self) {
         if let Some(addr) = self.stack.pop() {
             self.pc = addr;
         }

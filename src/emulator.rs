@@ -67,11 +67,13 @@ impl Emulator {
         match op {
             0x0 => match inst {
                 0x00e0 => self.clear_screen(),
+                0x00ee => self.subroutine_pop(),
 
                 _ => {}
             },
 
             0x1 => self.jump(inst),
+            0x2 => self.subroutine_call(inst),
             0x6 => self.set(inst),
             0x7 => self.add(inst),
             0xa => self.set_index(inst),
@@ -172,6 +174,18 @@ impl Emulator {
 
                 self.display[curr_y][curr_x] ^= bit;
             }
+        }
+    }
+
+    fn subroutine_call(&mut self, inst: u16) {
+        self.stack.push(self.pc);
+
+        self.jump(inst);
+    }
+
+    fn subroutine_pop(&mut self) {
+        if let Some(addr) = self.stack.pop() {
+            self.pc = addr;
         }
     }
 }

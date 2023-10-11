@@ -3,6 +3,7 @@ use crate::display::{DISPLAY_HEIGHT, DISPLAY_WIDTH};
 const MEM_SIZE: usize = 4 * 1024;
 const PROGRAM_LOC: usize = 0x200;
 const REGS_COUNT: usize = 16;
+const FLAG_REG: usize = 0xf;
 
 pub struct Emulator {
     memory: Vec<u8>,
@@ -77,6 +78,7 @@ impl Emulator {
             0x3 | 0x4 | 0x5 | 0x9 => self.skip(inst),
             0x6 => self.set(inst),
             0x7 => self.add(inst),
+            0x8 => self.logical_arithmetic_op(inst),
             0xa => self.set_index(inst),
             0xd => self.display(inst),
 
@@ -149,7 +151,7 @@ impl Emulator {
         let y = (self.regs[Emulator::get_second_reg(inst) as usize] % 32) as usize;
         let n = Emulator::get_immediate_number(inst);
 
-        self.regs[0xf] = 0;
+        self.regs[FLAG_REG] = 0;
 
         for row in 0..n {
             let curr_y = y + row as usize;
@@ -170,7 +172,7 @@ impl Emulator {
                 let bit = (sprite_byte >> (7 - i)) & 1;
 
                 if bit == 1 && self.display[curr_y][curr_x] == 1 {
-                    self.regs[0xf] = 1;
+                    self.regs[FLAG_REG] = 1;
                 }
 
                 self.display[curr_y][curr_x] ^= bit;
@@ -220,6 +222,68 @@ impl Emulator {
                     self.pc += 2;
                 }
             }
+            _ => {}
+        };
+    }
+
+    // TODO: Add configuration for legacy shift operation
+
+    fn logical_arithmetic_op(&mut self, inst: u16) {
+        let imm = Emulator::get_immediate_number(inst);
+
+        let vx_num = Emulator::get_first_reg(inst) as usize;
+        let vy_num = Emulator::get_first_reg(inst) as usize;
+
+        let vx = self.regs[vx_num];
+        let vy = self.regs[vy_num];
+
+        match imm {
+            0x0 => {
+                self.regs[vx_num] = vy;
+            }
+
+            0x1 => {
+                self.regs[vx_num] = vx | vy;
+            }
+
+            0x2 => {
+                self.regs[vx_num] = vx & vy;
+            }
+
+            0x3 => {
+                self.regs[vx_num] = vx ^ vy;
+            }
+
+            0x4 => match vx.checked_add(vy) {
+                Some(val) => self.regs[vx_num] = val,
+                None => {
+                    self.regs[vx_num] = vx + vy;
+                    self.regs[FLAG_REG] = 1;
+                }
+            },
+
+            0x5 => {
+                self.regs[FLAG_REG] = if vx > vy { 1 } else { 0 };
+
+                self.regs[vx_num] = vx - vy;
+            }
+
+            0x6 => {
+                self.regs[FLAG_REG] = vx & 1;
+                self.regs[vx_num] = vx >> 1;
+            }
+
+            0x7 => {
+                self.regs[FLAG_REG] = if vy > vx { 1 } else { 0 };
+
+                self.regs[vx_num] = vy - vx;
+            }
+
+            0xe => {
+                self.regs[FLAG_REG] = vx & 0x80;
+                self.regs[vx_num] = vx << 1;
+            }
+
             _ => {}
         };
     }

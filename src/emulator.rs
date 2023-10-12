@@ -1,3 +1,8 @@
+use std::sync::atomic::AtomicU8;
+use std::sync::{Arc, Condvar, Mutex};
+use std::thread;
+use std::time::Duration;
+
 use crate::display::{DISPLAY_HEIGHT, DISPLAY_WIDTH};
 
 const MEM_SIZE: usize = 4096;
@@ -26,11 +31,13 @@ const FONT: &[u8] = &[
     0xF0, 0x80, 0xF0, 0x80, 0x80, // F
 ];
 
+const TIMER_FREQ: f32 = 60.0;
+
 pub struct Emulator {
     memory: [u8; MEM_SIZE],
     stack: Vec<u16>,
-    delay_timer: u8,
-    sound_timer: u8,
+    delay_timer: Arc<(Mutex<u8>, Condvar)>,
+    sound_timer: Arc<(Mutex<u8>, Condvar)>,
     pc: u16,
     index: u16,
     regs: [u8; REGS_COUNT],
@@ -46,11 +53,20 @@ impl Emulator {
             memory[FONT_START + i] = FONT[i];
         }
 
+        let delay_timer = Arc::new((Mutex::new(0), Condvar::new()));
+        let sound_timer = Arc::new((Mutex::new(0), Condvar::new()));
+
+        let delay_copy = delay_timer.clone();
+        let sound_copy = delay_timer.clone();
+
+        thread::spawn(move || timer_worker(delay_copy));
+        thread::spawn(move || timer_worker(sound_copy));
+
         Self {
             memory,
             stack: Vec::new(),
-            delay_timer: 0,
-            sound_timer: 0,
+            delay_timer,
+            sound_timer,
             pc: 0,
             index: 0,
             regs: [0; REGS_COUNT],
@@ -115,6 +131,9 @@ impl Emulator {
             0xd => self.display(inst),
             0xe => self.skip_if_key(inst),
             0xf => match imm {
+                0x07 => self.read_delay_timer(inst),
+                0x15 => self.set_delay_timer(inst),
+                0x18 => self.set_sound_timer(inst),
                 0x1e => self.add_to_index(inst),
                 0x29 => self.font_character(inst),
                 0x33 => self.decimal_conversion(inst),
@@ -428,5 +447,50 @@ impl Emulator {
 
             _ => {}
         }
+    }
+
+    fn read_delay_timer(&mut self, inst: u16) {
+        let (lock, _) = &*self.delay_timer;
+        let timer = lock.lock().unwrap();
+
+        self.regs[Emulator::get_first_reg(inst) as usize] = *timer;
+    }
+
+    fn set_delay_timer(&mut self, inst: u16) {
+        let vx = self.regs[Emulator::get_first_reg(inst) as usize];
+
+        let (lock, cvar) = &*self.delay_timer;
+        let mut timer = lock.lock().unwrap();
+
+        *timer = vx;
+
+        cvar.notify_one();
+    }
+
+    fn set_sound_timer(&mut self, inst: u16) {
+        let vx = self.regs[Emulator::get_first_reg(inst) as usize];
+
+        let (lock, cvar) = &*self.sound_timer;
+        let mut timer = lock.lock().unwrap();
+
+        *timer = vx;
+
+        cvar.notify_one();
+    }
+}
+
+fn timer_worker(timer_data: Arc<(Mutex<u8>, Condvar)>) {
+    let (lock, cvar) = &*timer_data;
+
+    loop {
+        thread::sleep(Duration::from_secs_f32(1.0 / TIMER_FREQ));
+
+        let mut timer = lock.lock().unwrap();
+
+        while *timer <= 0 {
+            timer = cvar.wait(timer).unwrap();
+        }
+
+        *timer -= 1;
     }
 }

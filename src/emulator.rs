@@ -113,6 +113,10 @@ impl Emulator {
 
                 match imm {
                     0x1e => self.add_to_index(inst),
+                    0x29 => self.font_character(inst),
+                    0x33 => self.decimal_conversion(inst),
+                    0x55 => self.store_to_memory(inst),
+                    0x65 => self.load_from_memory(inst),
                     _ => {}
                 }
             }
@@ -346,6 +350,43 @@ impl Emulator {
 
         if self.index > 0xfff {
             self.regs[FLAG_REG] = 1;
+        }
+    }
+
+    fn font_character(&mut self, inst: u16) {
+        let reg = Emulator::get_first_reg(inst) as usize;
+
+        self.index = FONT_START as u16 + self.regs[reg] as u16;
+    }
+
+    fn decimal_conversion(&mut self, inst: u16) {
+        let reg = Emulator::get_first_reg(inst) as usize;
+        let val = self.regs[reg];
+
+        self.memory[self.index as usize] = val / 100;
+        self.memory[self.index as usize + 1] = (val / 10) % 10;
+        self.memory[self.index as usize + 2] = val % 10;
+    }
+
+    // TODO: Add legacy index increment behavior config
+
+    fn store_to_memory(&mut self, inst: u16) {
+        let max_reg = Emulator::get_first_reg(inst);
+
+        for i in 0..=max_reg {
+            let loc = (self.index + i as u16) as usize;
+
+            self.memory[loc] = self.regs[i as usize];
+        }
+    }
+
+    fn load_from_memory(&mut self, inst: u16) {
+        let max_reg = Emulator::get_first_reg(inst);
+
+        for i in 0..=max_reg {
+            let loc = (self.index + i as u16) as usize;
+
+            self.regs[i as usize] = self.memory[loc];
         }
     }
 }

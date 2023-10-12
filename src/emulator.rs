@@ -196,7 +196,7 @@ impl Emulator {
         let reg = Emulator::get_first_reg(inst);
         let val = Emulator::get_double_immediate_number(inst);
 
-        self.regs[reg as usize] += val;
+        self.regs[reg as usize] = self.regs[reg as usize].wrapping_add(val);
     }
 
     fn set_index(&mut self, inst: u16) {
@@ -317,7 +317,7 @@ impl Emulator {
             0x4 => match vx.checked_add(vy) {
                 Some(val) => self.regs[vx_num] = val,
                 None => {
-                    self.regs[vx_num] = vx + vy;
+                    self.regs[vx_num] = vx.wrapping_add(vy);
                     self.regs[FLAG_REG] = 1;
                 }
             },

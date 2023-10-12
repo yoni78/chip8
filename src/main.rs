@@ -8,7 +8,7 @@ use std::fs;
 fn main() {
     let mut chip_diplay = PistonDisplay::new(Emulator::new());
 
-    let program = fs::read("sample_programs/ibm_logo.ch8").unwrap();
+    let program = fs::read("roms/test_opcode.ch8").unwrap();
 
     chip_diplay.start(program);
 }

@@ -1,4 +1,3 @@
-use std::sync::atomic::AtomicU8;
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
 use std::time::Duration;

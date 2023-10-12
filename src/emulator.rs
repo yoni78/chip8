@@ -292,7 +292,7 @@ impl Emulator {
         let imm = Emulator::get_immediate_number(inst);
 
         let vx_num = Emulator::get_first_reg(inst) as usize;
-        let vy_num = Emulator::get_first_reg(inst) as usize;
+        let vy_num = Emulator::get_second_reg(inst) as usize;
 
         let vx = self.regs[vx_num];
         let vy = self.regs[vy_num];
@@ -325,7 +325,7 @@ impl Emulator {
             0x5 => {
                 self.regs[FLAG_REG] = if vx > vy { 1 } else { 0 };
 
-                self.regs[vx_num] = vx - vy;
+                self.regs[vx_num] = vx.wrapping_sub(vy);
             }
 
             0x6 => {
@@ -336,7 +336,7 @@ impl Emulator {
             0x7 => {
                 self.regs[FLAG_REG] = if vy > vx { 1 } else { 0 };
 
-                self.regs[vx_num] = vy - vx;
+                self.regs[vx_num] = vy.wrapping_sub(vx);
             }
 
             0xe => {

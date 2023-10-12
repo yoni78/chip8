@@ -93,6 +93,7 @@ impl Emulator {
 
     fn execute(&mut self, inst: u16) {
         let op = Emulator::get_opcode(inst);
+        let imm = Emulator::get_double_immediate_number(inst);
 
         match op {
             0x0 => match inst {
@@ -112,19 +113,16 @@ impl Emulator {
             0xb => self.jump_with_offset(inst),
             0xc => self.random(inst),
             0xd => self.display(inst),
-            0xf => {
-                let imm = Emulator::get_double_immediate_number(inst);
-
-                match imm {
-                    0x1e => self.add_to_index(inst),
-                    0x29 => self.font_character(inst),
-                    0x33 => self.decimal_conversion(inst),
-                    0x55 => self.store_to_memory(inst),
-                    0x65 => self.load_from_memory(inst),
-                    0xa => self.get_key(inst),
-                    _ => {}
-                }
-            }
+            0xe => self.skip_if_key(inst),
+            0xf => match imm {
+                0x1e => self.add_to_index(inst),
+                0x29 => self.font_character(inst),
+                0x33 => self.decimal_conversion(inst),
+                0x55 => self.store_to_memory(inst),
+                0x65 => self.load_from_memory(inst),
+                0xa => self.get_key(inst),
+                _ => {}
+            },
 
             // TODO: Invalid instruction error
             _ => {}
@@ -402,6 +400,33 @@ impl Emulator {
             self.regs[reg] = key;
         } else {
             self.pc -= 2
+        }
+    }
+
+    fn skip_if_key(&mut self, inst: u16) {
+        let imm = Emulator::get_double_immediate_number(inst);
+        let vx = self.regs[Emulator::get_first_reg(inst) as usize];
+
+        match imm {
+            0x9e => {
+                if let Some(key) = self.key_pressed {
+                    if key == vx {
+                        self.pc += 2;
+                    }
+                }
+            }
+
+            0xa1 => {
+                if let Some(key) = self.key_pressed {
+                    if key == vx {
+                        return;
+                    }
+                }
+
+                self.pc += 2;
+            }
+
+            _ => {}
         }
     }
 }

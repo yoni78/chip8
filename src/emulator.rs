@@ -2,8 +2,10 @@ use crate::display::{DISPLAY_HEIGHT, DISPLAY_WIDTH};
 
 const MEM_SIZE: usize = 4096;
 const PROGRAM_LOC: usize = 0x200;
+
 const REGS_COUNT: usize = 16;
 const FLAG_REG: usize = 0xf;
+
 const FONT_START: usize = 0x50;
 const FONT: &[u8] = &[
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -33,6 +35,7 @@ pub struct Emulator {
     index: u16,
     regs: [u8; REGS_COUNT],
     pub display: [[u8; DISPLAY_WIDTH]; DISPLAY_HEIGHT],
+    pub key_pressed: Option<u8>,
 }
 
 impl Emulator {
@@ -52,6 +55,7 @@ impl Emulator {
             index: 0,
             regs: [0; REGS_COUNT],
             display: [[0; DISPLAY_WIDTH]; DISPLAY_HEIGHT],
+            key_pressed: Option::None,
         }
     }
 
@@ -117,6 +121,7 @@ impl Emulator {
                     0x33 => self.decimal_conversion(inst),
                     0x55 => self.store_to_memory(inst),
                     0x65 => self.load_from_memory(inst),
+                    0xa => self.get_key(inst),
                     _ => {}
                 }
             }
@@ -387,6 +392,16 @@ impl Emulator {
             let loc = (self.index + i as u16) as usize;
 
             self.regs[i as usize] = self.memory[loc];
+        }
+    }
+
+    fn get_key(&mut self, inst: u16) {
+        if let Some(key) = self.key_pressed {
+            let reg = Emulator::get_first_reg(inst) as usize;
+
+            self.regs[reg] = key;
+        } else {
+            self.pc -= 2
         }
     }
 }

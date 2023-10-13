@@ -90,7 +90,6 @@ impl PistonDisplay {
                 Key::V => self.emulator.key_pressed = Some(0xf),
                 _ => {}
             }
-            
         } else {
             self.emulator.key_pressed = None;
         }

@@ -80,6 +80,7 @@ impl Emulator {
     }
 
     pub fn execute_next_instruction(&mut self) {
+        // TODO: Stop at empty memory?
         let inst = self.fetch();
         self.execute(inst);
     }
@@ -377,7 +378,7 @@ impl Emulator {
     fn font_character(&mut self, inst: u16) {
         let reg = Emulator::get_first_reg(inst) as usize;
 
-        self.index = FONT_START as u16 + self.regs[reg] as u16;
+        self.index = FONT_START as u16 + (self.regs[reg] * 5) as u16;
     }
 
     fn decimal_conversion(&mut self, inst: u16) {

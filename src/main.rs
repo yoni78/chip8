@@ -3,12 +3,21 @@ mod emulator;
 
 use display::{Display, PistonDisplay};
 use emulator::Emulator;
-use std::fs;
+use std::{env, fs};
+
+const ARG_ERROR: &str = "The first argument should be a path to a valid CHIP-8 ROM.";
 
 fn main() {
-    let mut chip_diplay = PistonDisplay::new(Emulator::new());
+    let args: Vec<String> = env::args().collect();
 
-    let program = fs::read("roms/bc_test.ch8").unwrap();
+    if args.len() == 1 {
+        println!("{}", ARG_ERROR);
+        return;
+    }
 
-    chip_diplay.start(program);
+    match fs::read(&args[1]) {
+        Ok(program) => PistonDisplay::new(Emulator::new()).start(program),
+
+        Err(_) => println!("{}", ARG_ERROR),
+    }
 }

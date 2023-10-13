@@ -80,7 +80,6 @@ impl Emulator {
     }
 
     pub fn execute_next_instruction(&mut self) {
-        // TODO: Stop at empty memory?
         let inst = self.fetch();
         self.execute(inst);
     }
@@ -92,7 +91,10 @@ impl Emulator {
     }
 
     fn fetch(&mut self) -> u16 {
-        // TODO: Check PC bounds
+        if self.pc >= MEM_SIZE as u16 {
+            return 0;
+        }
+
         let msb = self.memory[self.pc as usize];
         let lsb = self.memory[(self.pc + 1) as usize];
 

@@ -8,7 +8,7 @@ use std::fs;
 fn main() {
     let mut chip_diplay = PistonDisplay::new(Emulator::new());
 
-    let program = fs::read("roms/font.ch8").unwrap();
+    let program = fs::read("roms/bc_test.ch8").unwrap();
 
     chip_diplay.start(program);
 }

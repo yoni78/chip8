@@ -341,7 +341,7 @@ impl Emulator {
             }
 
             0xe => {
-                self.regs[FLAG_REG] = vx & 0x80;
+                self.regs[FLAG_REG] = (vx >> 7) & 0x1;
                 self.regs[vx_num] = vx << 1;
             }
 
